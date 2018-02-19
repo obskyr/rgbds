@@ -33,7 +33,7 @@ struct RawIndexedImage *input_png_file(const struct Options *opts,
 	f = fopen(opts->infile, "rb");
 	if (!f)
 		err(1, "Opening input png file '%s' failed", opts->infile);
-	
+
 	initialize_png(&img, f);
 
 	if (img.depth != depth) {
@@ -101,7 +101,6 @@ void output_png_file(const struct Options *opts,
 	if (!img.info)
 		errx(1, "Creating png info structure failed");
 
-	/* TODO: Better error handling here? */
 	if (setjmp(png_jmpbuf(img.png)))
 		exit(1);
 
@@ -110,7 +109,7 @@ void output_png_file(const struct Options *opts,
 	png_set_IHDR(img.png, img.info, raw_image->width, raw_image->height,
 		     8, PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
 		     PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-	
+
 	png_palette = malloc(sizeof(png_color *) * raw_image->num_colors);
 	for (i = 0; i < raw_image->num_colors; i++) {
 		png_palette[i].red   = raw_image->palette[i].red;
@@ -120,9 +119,8 @@ void output_png_file(const struct Options *opts,
 	png_set_PLTE(img.png, img.info, png_palette, raw_image->num_colors);
 	free(png_palette);
 
-	if (opts->fix) {
+	if (opts->fix)
 		set_text(&img, png_options);
-	}
 
 	png_write_info(img.png, img.info);
 
@@ -141,9 +139,9 @@ void destroy_raw_image(struct RawIndexedImage **raw_image_ptr_ptr)
 	int y;
 	struct RawIndexedImage *raw_image = *raw_image_ptr_ptr;
 
-	for (y = 0; y < raw_image->height; y++) {
+	for (y = 0; y < raw_image->height; y++)
 		free(raw_image->data[y]);
-	}
+
 	free(raw_image->data);
 	free(raw_image->palette);
 	free(raw_image);
@@ -161,10 +159,8 @@ static void initialize_png(struct PNGImage *img, FILE *f)
 	if (!img->info)
 		errx(1, "Creating png info structure failed");
 
-	/* TODO: Better error handling here? */
-	if (setjmp(png_jmpbuf(img->png))) {
+	if (setjmp(png_jmpbuf(img->png)))
 		exit(1);
-	}
 
 	png_init_io(img->png, f);
 
@@ -176,9 +172,8 @@ static void initialize_png(struct PNGImage *img, FILE *f)
 	img->type   = png_get_color_type(img->png, img->info);
 }
 
-
 static void read_png(struct PNGImage *img);
-static struct RawIndexedImage *create_raw_image(int width, int height, 
+static struct RawIndexedImage *create_raw_image(int width, int height,
 						int num_colors);
 static void set_raw_image_palette(struct RawIndexedImage *raw_image,
 				  const png_color *palette, int num_colors);
@@ -196,9 +191,8 @@ static struct RawIndexedImage *indexed_png_to_raw(struct PNGImage *img)
 	uint8_t *old_to_new_palette;
 	int i, x, y;
 
-	if (img->depth < 8) {
+	if (img->depth < 8)
 		png_set_packing(img->png);
-	}
 
 	png_get_PLTE(img->png, img->info, &palette, &colors_in_PLTE);
 
@@ -259,9 +253,8 @@ static struct RawIndexedImage *indexed_png_to_raw(struct PNGImage *img)
 		read_png(img);
 
 		for (y = 0; y < img->height; y++) {
-			for (x = 0; x < img->width; x++) {
+			for (x = 0; x < img->width; x++)
 				raw_image->data[y][x] = img->data[y][x];
-			}
 		}
 	}
 
@@ -270,9 +263,9 @@ static struct RawIndexedImage *indexed_png_to_raw(struct PNGImage *img)
 
 static struct RawIndexedImage *grayscale_png_to_raw(struct PNGImage *img)
 {
-	if (img->depth < 8) {
+	if (img->depth < 8)
 		png_set_expand_gray_1_2_4_to_8(img->png);
-	}
+
 	png_set_gray_to_rgb(img->png);
 	return truecolor_png_to_raw(img);
 }
@@ -292,18 +285,17 @@ static struct RawIndexedImage *truecolor_png_to_raw(struct PNGImage *img)
 
 	if (img->depth == 16) {
 #if PNG_LIBPNG_VER >= 10504
-	png_set_scale_16(img->png);
+		png_set_scale_16(img->png);
 #else
-	png_set_strip_16(img->png);
+		png_set_strip_16(img->png);
 #endif
 	}
 
 	if (!(img->type & PNG_COLOR_MASK_ALPHA)) {
-		if (png_get_valid(img->png, img->info, PNG_INFO_tRNS)) {
+		if (png_get_valid(img->png, img->info, PNG_INFO_tRNS))
 			png_set_tRNS_to_alpha(img->png);
-		} else {
+		else
 			png_set_add_alpha(img->png, 0xFF, PNG_FILLER_AFTER);
-		}
 	}
 
 	read_png(img);
@@ -324,11 +316,10 @@ static void rgba_build_palette(struct PNGImage *img,
 static void rgba_png_palette(struct PNGImage *img,
 			     png_color **palette_ptr_ptr, int *num_colors)
 {
-	if (png_get_valid(img->png, img->info, PNG_INFO_PLTE)) {
+	if (png_get_valid(img->png, img->info, PNG_INFO_PLTE))
 		return rgba_PLTE_palette(img, palette_ptr_ptr, num_colors);
-	} else {
+	else
 		return rgba_build_palette(img, palette_ptr_ptr, num_colors);
-	}
 }
 
 static void rgba_PLTE_palette(struct PNGImage *img,
@@ -383,9 +374,8 @@ static void rgba_build_palette(struct PNGImage *img,
 	/* In order not to count 100% transparent images as grayscale. */
 	only_grayscale = *num_colors ? only_grayscale : false;
 
-	if (!only_grayscale || !fit_grayscale_palette(palette, num_colors)) {
+	if (!only_grayscale || !fit_grayscale_palette(palette, num_colors))
 		order_color_palette(palette, *num_colors);
-	}
 }
 
 static void update_built_palette(png_color *palette,
@@ -400,9 +390,8 @@ static void update_built_palette(png_color *palette,
 	 * Transparent pixels don't count toward the palette,
 	 * as they'll be replaced with color #0 later.
 	 */
-	if (alpha == 0) {
+	if (alpha == 0)
 		return;
-	}
 
 	if (*only_grayscale && !(pixel_color->red == pixel_color->green &&
 				 pixel_color->red == pixel_color->blue)) {
@@ -462,9 +451,8 @@ static int fit_grayscale_palette(png_color *palette, int *num_colors)
 		set_indices[shade_index] = true;
 	}
 
-	for (i = 0; i < colors; i++) {
+	for (i = 0; i < colors; i++)
 		palette[i] = fitted_palette[i];
-	}
 
 	*num_colors = colors;
 
@@ -481,18 +469,18 @@ struct ColorWithLuminance {
 
 static int compare_luminance(const void *a, const void *b)
 {
-	struct ColorWithLuminance *x = (struct ColorWithLuminance *) a;
-	struct ColorWithLuminance *y = (struct ColorWithLuminance *) b;
+	struct ColorWithLuminance *x = (struct ColorWithLuminance *)a;
+	struct ColorWithLuminance *y = (struct ColorWithLuminance *)b;
+
 	return y->luminance - x->luminance;
 }
 
 static void order_color_palette(png_color *palette, int num_colors)
 {
 	int i;
-	struct ColorWithLuminance *palette_with_luminance;
-
-	palette_with_luminance =
+	struct ColorWithLuminance *palette_with_luminance =
 		malloc(sizeof(struct ColorWithLuminance) * num_colors);
+	
 	for (i = 0; i < num_colors; i++) {
 		/*
 		 * Normally this would be done with floats, but since it's only
@@ -505,9 +493,9 @@ static void order_color_palette(png_color *palette, int num_colors)
 	}
 	qsort(palette_with_luminance, num_colors,
 	      sizeof(struct ColorWithLuminance), compare_luminance);
-	for (i = 0; i < num_colors; i++) {
+	for (i = 0; i < num_colors; i++)
 		palette[i] = palette_with_luminance[i].color;
-	}
+
 	free(palette_with_luminance);
 }
 
@@ -526,13 +514,13 @@ static struct RawIndexedImage
 	int x, y, value_index;
 
 	raw_image = create_raw_image(img->width, img->height, colors);
-	
+
 	set_raw_image_palette(raw_image, palette, colors_in_palette);
 
 	for (y = 0; y < img->height; y++) {
 		x = raw_image->width - 1;
 		value_index = img->width * 4 - 1;
-		
+
 		while (x >= 0) {
 			put_raw_image_pixel(raw_image, img,
 					    &value_index, x, y,
@@ -540,7 +528,7 @@ static struct RawIndexedImage
 			x--;
 		}
 	}
-	
+
 	return raw_image;
 }
 
@@ -555,7 +543,7 @@ static void put_raw_image_pixel(struct RawIndexedImage *raw_image,
 {
 	png_color pixel_color;
 	png_byte alpha;
-	
+
 	alpha = img->data[y][*value_index];
 	if (alpha == 0) {
 		raw_image->data[y][x] = 0;
@@ -565,8 +553,9 @@ static void put_raw_image_pixel(struct RawIndexedImage *raw_image,
 		pixel_color.blue  = img->data[y][(*value_index)--];
 		pixel_color.green = img->data[y][(*value_index)--];
 		pixel_color.red   = img->data[y][(*value_index)--];
-		raw_image->data[y][x] =
-			palette_index_of(palette, colors_in_palette, &pixel_color);
+		raw_image->data[y][x] = palette_index_of(palette,
+							 colors_in_palette,
+							 &pixel_color);
 	}
 }
 
@@ -592,15 +581,14 @@ static void read_png(struct PNGImage *img)
 	png_read_update_info(img->png, img->info);
 
 	img->data = malloc(sizeof(png_byte *) * img->height);
-	for (y = 0; y < img->height; y++) {
+	for (y = 0; y < img->height; y++)
 		img->data[y] = malloc(png_get_rowbytes(img->png, img->info));
-	}
 
 	png_read_image(img->png, img->data);
 	png_read_end(img->png, img->info);
 }
 
-static struct RawIndexedImage *create_raw_image(int width, int height, 
+static struct RawIndexedImage *create_raw_image(int width, int height,
 						int num_colors)
 {
 	struct RawIndexedImage *raw_image;
@@ -615,9 +603,8 @@ static struct RawIndexedImage *create_raw_image(int width, int height,
 	raw_image->palette = malloc(sizeof(struct RGBColor) * num_colors);
 
 	raw_image->data = malloc(sizeof(uint8_t *) * height);
-	for (y = 0; y < height; y++) {
+	for (y = 0; y < height; y++)
 		raw_image->data[y] = malloc(sizeof(uint8_t) * width);
-	}
 
 	return raw_image;
 }

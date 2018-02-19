@@ -239,9 +239,8 @@ int main(int argc, char *argv[])
 	if (*opts.palfile)
 		output_palette_file(&opts, raw_image);
 
-	if (opts.fix || opts.debug) {
+	if (opts.fix || opts.debug)
 		output_png_file(&opts, &png_options, raw_image);
-	}
 
 	destroy_raw_image(&raw_image);
 	free(gb.data);

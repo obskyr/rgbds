@@ -116,7 +116,7 @@ void create_tilemap(const struct Options *opts, struct GBImage *gb,
 		}
 		if (opts->unique) {
 			index = get_tile_index(tile, tiles, num_tiles,
-				tile_size);
+					       tile_size);
 			if (index < 0) {
 				index = num_tiles;
 				tiles[num_tiles] = tile;
@@ -172,9 +172,9 @@ void output_palette_file(const struct Options *opts,
 	uint8_t cur_bytes[2];
 
 	f = fopen(opts->palfile, "wb");
-	if (!f) {
+	if (!f)
 		err(1, "Opening palette file '%s' failed", opts->palfile);
-	}
+
 	for (i = 0; i < raw_image->num_colors; i++) {
 		color =
 			raw_image->palette[i].blue  >> 3 << 10 |
